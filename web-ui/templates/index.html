@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Anonymizer - Cold Call Videos</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8f9ff;
+        }
+        
+        .upload-area:hover {
+            background: #f0f3ff;
+            border-color: #764ba2;
+        }
+        
+        .upload-area.dragging {
+            background: #e8ecff;
+            border-color: #764ba2;
+            transform: scale(1.02);
+        }
+        
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+        
+        .upload-text {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .upload-hint {
+            font-size: 14px;
+            color: #999;
+        }
+        
+        input[type="file"] {
+            display: none;
+        }
+        
+        .settings {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9ff;
+            border-radius: 10px;
+        }
+        
+        .setting-item {
+            margin-bottom: 15px;
+        }
+        
+        .setting-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+            font-size: 14px;
+        }
+        
+        .pitch-control {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        input[type="range"] {
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            background: #ddd;
+            outline: none;
+        }
+        
+        .pitch-value {
+            font-weight: 700;
+            color: #667eea;
+            min-width: 50px;
+            text-align: center;
+        }
+        
+        .pitch-hint {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        button {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .progress {
+            display: none;
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        .progress.active {
+            display: block;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .progress-text {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .result {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            background: #f0fff4;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .result.active {
+            display: block;
+        }
+        
+        .result h3 {
+            color: #22c55e;
+            margin-bottom: 15px;
+        }
+        
+        .result button {
+            background: #22c55e;
+            margin-top: 10px;
+        }
+        
+        .result button:hover {
+            box-shadow: 0 5px 20px rgba(34, 197, 94, 0.4);
+        }
+        
+        .error {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            background: #fee;
+            border-radius: 10px;
+            color: #c00;
+            text-align: center;
+        }
+        
+        .error.active {
+            display: block;
+        }
+        
+        .file-info {
+            display: none;
+            margin-top: 15px;
+            padding: 15px;
+            background: #f0f3ff;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #333;
+        }
+        
+        .file-info.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎙️ Voice Anonymizer</h1>
+        <p class="subtitle">Anonymize cold call videos for YouTube - one click</p>
+        
+        <div class="upload-area" id="uploadArea">
+            <div class="upload-icon">📹</div>
+            <div class="upload-text">Drop your cold call video here</div>
+            <div class="upload-hint">or click to browse (MP4, MOV, AVI)</div>
+            <input type="file" id="fileInput" accept="video/*">
+        </div>
+        
+        <div class="file-info" id="fileInfo"></div>
+        
+        <div class="settings">
+            <div class="setting-item">
+                <label>Voice Depth</label>
+                <div class="pitch-control">
+                    <span>Light</span>
+                    <input type="range" id="pitchSlider" min="0.78" max="0.88" step="0.01" value="0.82">
+                    <span>Deep</span>
+                    <span class="pitch-value" id="pitchValue">0.82</span>
+                </div>
+                <div class="pitch-hint">0.82 = Natural deep voice (recommended)</div>
+            </div>
+        </div>
+        
+        <button id="processBtn" disabled>Select a video first</button>
+        
+        <div class="progress" id="progress">
+            <div class="spinner"></div>
+            <div class="progress-text">Processing your video... This may take a few minutes.</div>
+        </div>
+        
+        <div class="result" id="result">
+            <h3>✅ Video anonymized!</h3>
+            <button id="downloadBtn">Download Anonymized Video</button>
+            <button id="newVideoBtn" style="background: #667eea; margin-top: 10px;">Process Another Video</button>
+        </div>
+        
+        <div class="error" id="error"></div>
+    </div>
+    
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const pitchSlider = document.getElementById('pitchSlider');
+        const pitchValue = document.getElementById('pitchValue');
+        const processBtn = document.getElementById('processBtn');
+        const progress = document.getElementById('progress');
+        const result = document.getElementById('result');
+        const error = document.getElementById('error');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const newVideoBtn = document.getElementById('newVideoBtn');
+        
+        let selectedFile = null;
+        let currentJobId = null;
+        
+        // Upload area interactions
+        uploadArea.addEventListener('click', () => fileInput.click());
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragging');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragging');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragging');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileSelect(files[0]);
+            }
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileSelect(e.target.files[0]);
+            }
+        });
+        
+        // Pitch slider
+        pitchSlider.addEventListener('input', (e) => {
+            pitchValue.textContent = e.target.value;
+        });
+        
+        // Handle file selection
+        function handleFileSelect(file) {
+            selectedFile = file;
+            const sizeMB = (file.size / 1024 / 1024).toFixed(2);
+            fileInfo.textContent = `📁 ${file.name} (${sizeMB} MB)`;
+            fileInfo.classList.add('active');
+            processBtn.disabled = false;
+            processBtn.textContent = 'Anonymize Video';
+        }
+        
+        // Process video
+        processBtn.addEventListener('click', async () => {
+            if (!selectedFile) return;
+            
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            formData.append('pitch', pitchSlider.value);
+            
+            processBtn.disabled = true;
+            progress.classList.add('active');
+            result.classList.remove('active');
+            error.classList.remove('active');
+            
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentJobId = data.job_id;
+                    progress.classList.remove('active');
+                    result.classList.add('active');
+                } else {
+                    throw new Error(data.error || 'Processing failed');
+                }
+            } catch (err) {
+                progress.classList.remove('active');
+                error.textContent = `Error: ${err.message}`;
+                error.classList.add('active');
+                processBtn.disabled = false;
+            }
+        });
+        
+        // Download result
+        downloadBtn.addEventListener('click', () => {
+            if (currentJobId) {
+                window.location.href = `/download/${currentJobId}`;
+                // Clean up files after download
+                setTimeout(() => {
+                    fetch(`/cleanup/${currentJobId}`, { method: 'POST' });
+                }, 2000);
+            }
+        });
+        
+        // Process another video
+        newVideoBtn.addEventListener('click', () => {
+            selectedFile = null;
+            currentJobId = null;
+            fileInput.value = '';
+            fileInfo.classList.remove('active');
+            result.classList.remove('active');
+            processBtn.disabled = true;
+            processBtn.textContent = 'Select a video first';
+        });
+    </script>
+</body>
+</html>
