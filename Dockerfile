@@ -23,4 +23,4 @@ WORKDIR /app/web-ui
 EXPOSE 8080
 
 # Run the application
-CMD gunicorn -w 2 -b 0.0.0.0:$PORT app:app --timeout 600
+CMD ["sh", "-c", "gunicorn -w 2 -b 0.0.0.0:${PORT:-8080} app:app --timeout 600"]
