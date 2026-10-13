@@ -5,4 +5,4 @@ nixPkgs = ["python311", "ffmpeg"]
 cmds = ["pip install -r requirements.txt", "pip install -r web-ui/requirements.txt"]
 
 [start]
-cmd = "cd web-ui && gunicorn -w 2 -b 0.0.0.0:$PORT app:app --timeout 600"
+cmd = "cd web-ui && python3 app.py"
