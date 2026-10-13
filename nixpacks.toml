@@ -1,0 +1,8 @@
+[phases.setup]
+nixPkgs = ["python311", "ffmpeg"]
+
+[phases.install]
+cmds = ["pip install -r requirements.txt", "pip install -r web-ui/requirements.txt"]
+
+[start]
+cmd = "cd web-ui && gunicorn -w 2 -b 0.0.0.0:$PORT app:app --timeout 600"
