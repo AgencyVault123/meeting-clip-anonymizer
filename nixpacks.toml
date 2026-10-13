@@ -1,8 +1,0 @@
-[phases.setup]
-nixPkgs = ["python311", "ffmpeg"]
-
-[phases.install]
-cmds = ["pip install -r requirements.txt", "pip install -r web-ui/requirements.txt", "pip install gunicorn"]
-
-[start]
-cmd = "cd web-ui && python3 app.py"
