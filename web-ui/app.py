@@ -51,7 +51,7 @@ def upload_file():
     try:
         # Get the path to voice_anonymize.py (parent directory)
         script_path = Path(__file__).parent.parent / 'voice_anonymize.py'
-        speaker_detect_script = Path(__file__).parent / 'speaker_detection.py'
+        speaker_detect_script = Path(__file__).parent / 'simple_speaker_detect.py'
         
         # Build command args
         cmd_args = [
