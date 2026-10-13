@@ -9,6 +9,7 @@ import uuid
 from pathlib import Path
 import tempfile
 import shutil
+import json
 
 app = Flask(__name__)
 
@@ -36,6 +37,7 @@ def upload_file():
     
     # Get pitch setting (default 0.82)
     pitch = float(request.form.get('pitch', 0.82))
+    auto_detect = request.form.get('auto_detect', 'true').lower() == 'true'
     
     # Generate unique ID for this job
     job_id = str(uuid.uuid4())
@@ -47,17 +49,42 @@ def upload_file():
     file.save(input_path)
     
     try:
-        # Run voice anonymization
         # Get the path to voice_anonymize.py (parent directory)
         script_path = Path(__file__).parent.parent / 'voice_anonymize.py'
+        speaker_detect_script = Path(__file__).parent / 'speaker_detection.py'
         
-        subprocess.run([
+        # Build command args
+        cmd_args = [
             'python3',
             str(script_path),
             str(input_path),
             str(output_path),
             '--pitch', str(pitch)
-        ], check=True, capture_output=True, text=True)
+        ]
+        
+        # Auto-detect speaker intervals if enabled
+        if auto_detect:
+            try:
+                # Run speaker detection
+                result = subprocess.run([
+                    'python3',
+                    str(speaker_detect_script),
+                    str(input_path)
+                ], capture_output=True, text=True, check=True)
+                
+                detection_data = json.loads(result.stdout)
+                intervals = detection_data.get('intervals', [])
+                
+                if intervals:
+                    # Format intervals for voice_anonymize.py
+                    interval_str = ','.join(f"{start}:{end}" for start, end in intervals)
+                    cmd_args.extend(['--intervals', interval_str])
+            except Exception as e:
+                # Fall back to anonymizing entire video if detection fails
+                print(f"Speaker detection failed, anonymizing entire video: {e}")
+        
+        # Run voice anonymization
+        subprocess.run(cmd_args, check=True, capture_output=True, text=True)
         
         return jsonify({
             'success': True,
