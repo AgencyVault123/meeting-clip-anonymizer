@@ -28,30 +28,41 @@ def index():
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
-    if 'file' not in request.files:
-        return jsonify({'error': 'No file uploaded'}), 400
-    
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({'error': 'No file selected'}), 400
-    
-    # Get pitch setting (default 0.82)
-    pitch = float(request.form.get('pitch', 0.82))
-    auto_detect = request.form.get('auto_detect', 'true').lower() == 'true'
-    
-    # Generate unique ID for this job
-    job_id = str(uuid.uuid4())
-    
-    # Save uploaded file
-    input_path = UPLOAD_FOLDER / f"{job_id}_input.mp4"
-    output_path = OUTPUT_FOLDER / f"{job_id}_output.mp4"
-    
-    file.save(input_path)
+    try:
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file uploaded'}), 400
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+        
+        # Get pitch setting (default 0.82)
+        pitch = float(request.form.get('pitch', 0.82))
+        auto_detect = request.form.get('auto_detect', 'true').lower() == 'true'
+        
+        # Generate unique ID for this job
+        job_id = str(uuid.uuid4())
+        
+        # Save uploaded file
+        input_path = UPLOAD_FOLDER / f"{job_id}_input.mp4"
+        output_path = OUTPUT_FOLDER / f"{job_id}_output.mp4"
+        
+        file.save(input_path)
+    except Exception as e:
+        return jsonify({'error': f'Upload failed: {str(e)}'}), 500
     
     try:
+        # Check if ffmpeg is available
+        ffmpeg_check = subprocess.run(['which', 'ffmpeg'], capture_output=True)
+        if ffmpeg_check.returncode != 0:
+            return jsonify({'error': 'ffmpeg not found on server - contact admin'}), 500
+        
         # Get the path to voice_anonymize.py (parent directory)
         script_path = Path(__file__).parent.parent / 'voice_anonymize.py'
         speaker_detect_script = Path(__file__).parent / 'simple_speaker_detect.py'
+        
+        if not script_path.exists():
+            return jsonify({'error': 'Voice anonymization script not found'}), 500
         
         # Build command args
         cmd_args = [
